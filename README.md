@@ -15,7 +15,15 @@ Below is a infographic we designed that illustrates this finding.
 
 ![Economics vs Computer Science Majors](/EconomicsVsComputerScience.jpg?raw=true "Economics vs Computer Science")
 
-### D3 Visualization: Trends of Harvard Degrees Conferred
+### Interactive Visualization: Trends of Harvard Degrees Conferred
 
-<a href="/ProcessBook1.pdf">Process Book</a>
+For our initial data exploration, we used python to scrape and compile data from various online sources of the number of students in each concentration from 2000-2012. We used Tableu to previsualize the data before sketching and implementing an interactive visualization using D3.  
+
+<a href="/ProcessBook1.pdf">First Process Book</a>
+
+### Extending the Visualization 
+
+With our initial design complete, we experimented with a new design to tell the story of the data in a different way. Specifically we enabled users to drill in on the trends of a particular concentration while also comparing the popularity amongs all the concentrations. 
+
+<a href="/ProcessBook2.pdf">Second Process Book</a>
 
