@@ -23,7 +23,7 @@ For our initial data exploration, we used python to scrape and compile data from
 
 ### Extending the Visualization 
 
-With our initial design complete, we experimented with a new design to tell the story of the data in a different way. Specifically we enabled users to drill in on the trends of a particular concentration while also comparing the popularity amongs all the concentrations. 
+With our initial design complete, we experimented with a new design to tell the story of the data. Specifically we enabled users to drill in on the trends of a particular concentration while also comparing the popularity amongs all the concentrations. 
 
 <a href="/ProcessBook2.pdf">Second Process Book</a>
 
