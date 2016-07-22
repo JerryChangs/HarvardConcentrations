@@ -3,7 +3,9 @@
 Data Visualization Final Project
 
 Contributed by Jerry Chang and Lucas Lin
-Spring 2013, CS171
+
+Spring 2013
+
 
 ## Popularity of Economics vs Computer Science at Harvard
 
