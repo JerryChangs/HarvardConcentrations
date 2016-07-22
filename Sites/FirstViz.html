@@ -1,0 +1,6299 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8"> 
+
+	<title>Concentrations at Harvard - CS171 Project 2</title>
+
+	<link rel="icon" type="image/ico" href="./img/favicon.ico"/>
+	<link href="./css/bootstrap.css" rel="stylesheet"> 
+	<link rel="stylesheet" href="./css/barchart.css" type="text/css">
+	<script src="./js/d3.v3.min.js"></script>
+	<script src="./js/jquery-1.9.1.min.js"></script>
+	<script src="./js/bootstrap.js"></script>
+</head>
+
+<body>
+
+	<header>
+		<h1>Concentrations at Harvard</h1>
+		<div class="names">Created by Jerry Chang and Lucas Lin</div>
+		<p>
+			In 2007, Biology was eliminated as a concentation at the college and the School of Engineering and Applied Science was made a separate school. Predictably, these events appear to be correlated with changes in concentration distribution in that year and the ones that followed. There have been other major trends in the past decade as well &mdash; the number of students in Computer Science fell sharply early on, but has recently steeply risen, and Economics has been on a steady decline in size since 2007. Is the burst of the dot-com bubble and the more recent startup trend paired with the financial crisis responsible for these changes? Below is a look at the number of students in each concentration from 2000 to 2012. &nbsp;<i href="#help" data-toggle="modal" class="icon-info-sign"></i>
+		</p>
+		<p>
+			<a href="./ProcessBook1.pdf" class="btn btn-small"><i class="icon-book"></i>&nbsp;Process Book</a>
+            <a href="./SecondViz.html" class="btn btn-small"><i class="icon-film"></i>&nbsp;Extended Visualization</a>
+		</p>
+
+		<hr>
+
+	</header>
+
+
+	<script>
+	// http://stackoverflow.com/questions/8667882/how-to-pause-a-youtube-player-when-hiding-the-iframe
+	function toggleVideo(state) {
+	    // if state == 'hide', hide. Else: show video
+	    var div = document.getElementById("example");
+	    var iframe = div.getElementsByTagName("iframe")[0].contentWindow;
+	    div.style.display = state == 'hide' ? 'none' : '';
+	    func = state == 'hide' ? 'pauseVideo' : 'playVideo';
+
+	    iframe.postMessage('{"event":"command","func":"' + func + '","args":""}', '*');
+	}
+
+	function addVideo(){
+		var modalBody = d3.select(".mbody")
+			.append('iframe')
+			.attr("id", "video")
+			.attr("width", "560")
+			.attr("height", "315")
+			.attr("src", "http://www.youtube.com/embed/Woyv2cCondI?rel=0")
+			.attr("frameborder", "0")
+			.attr("allowfullscreen", "true")
+			.style("border", "0px")
+			.style("padding", "10px");
+	}
+
+	</script>
+
+
+	<div class="container">
+		<div id="example" class="modal hide fade in" style="display: none;">
+	            <div class="modal-header">
+	              <a class="close" data-dismiss="modal">X</a>
+	              <h4>CS171 Project 2</h4>
+	            </div>
+	            <div class="mbody">
+	            </div>
+	            <div class="modal-footer">
+	             <a href="#" class="btn" id = "vid_close" data-dismiss="modal" 
+		>Close</a>
+	            </div>
+		</div>
+	</div>
+
+
+	<script type="text/javascript">
+		$('#example').on('hidden', function(){$('div.mbody').html('&nbsp;')});
+	</script>
+
+
+
+
+
+
+
+
+
+
+ 
+<!-- Help -->
+<div id="help" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="helpLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="helpLabel">How it works...</h3>
+  </div>
+
+  <div class="modal-body">
+    
+    	<strong>To filter by concentration categories:</strong> 
+    	<br>Mouse over the categories at the top of the graph.
+
+    	<br><br>
+    	<strong> To show all the concentrations again:</strong> 
+    	<br>Press the black "Show All Concentrations" button on the right.
+    	<br><br>
+
+    	<strong>To change the year shown:</strong> 
+    	<br>Use the slider or dropdown on the right.
+    	<hr>
+
+    	<em>Highlights</em>
+    	<br><br>
+    	The "Top Concentrations" list on the right shows the concentrations with the most students of the ones currently displayed. 
+    	
+    	Under that list is the average and total for the concentrations currently shown.
+    	
+    	The horizontal line on the graph represents the current average of all the bars shown.
+    	<br><br>
+    	These change when you filter, so check back!
+
+    
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+	<div id="main-content" class="row">
+		<div id="d3el" class="span10">
+
+			<div id="categories" class="row">
+				<div id="titleH" class="span3 offset1"><h3 id="Hh" class="H"  onmouseover="this.className='H filter'; document.getElementById('Nh').className='N'; document.getElementById('Sh').className='S';filterCategory('Humanities'); drawTable(function(){ return getTop('all');});">Humanities (16)</h3></div>
+				<div id="titleN" class="span3"><h3 id="Nh" class="N"  onmouseover="this.className= 'N filter';document.getElementById('Hh').className='H'; document.getElementById('Sh').className = 'S';filterCategory('Natural Sciences'); drawTable(function(){ return getTop('all');});">Natural Sciences (22)</h3></div>
+				<div id="titleS" class="span3" ><h3 id="Sh" class="S" onmouseover="this.className = 'S filter'; document.getElementById('Hh').className='H'; document.getElementById('Nh').className='N';filterCategory('Social Sciences'); drawTable(function(){ return getTop('all');});">Social Science (11)</h3></div>
+			</div>
+
+		</div>
+
+
+
+
+
+
+
+
+
+
+	<link rel="stylesheet" href="./css/jquery-ui.css" />
+	  <script src="./js/jquery-ui.js"></script>
+	  <script>
+	  $(function() {
+	    var select = $( "#yrs" );
+	    var ins = $("#yrs");
+	    var slider = $( "<div id='slider'></div>" ).insertAfter( ins ).slider({
+	      min: 0,
+	      max: 13,
+	      range: "min",
+	      value: select[ 0 ].selectedIndex + 2000,
+	      slide: function( event, ui ) {
+	        select[ 0 ].selectedIndex = ui.value - 1;
+
+	        year = document.getElementById("yrs").value;
+			dataset = update_year(dataset, year);
+			filteredData = update_year(filteredData, year);
+			update();
+	      }
+	    });
+	    $( "#yrs" ).change(function() {
+	      slider.slider( "value", this.selectedIndex + 1 );
+		    });
+	  });
+	  </script>
+
+
+		<div id="selections" class="span2">
+
+			<div id="scrollable-concentrations"></div>
+
+			<a href="#" class="btn btn-inverse btn-block" id="reset_button" data-dismiss="modal"  onclick="resetData(); update(); drawTable(function(){return getTop('all');}); document.getElementById('Hh').className='H'; document.getElementById('Nh').className='N'; document.getElementById('Sh').className='S';"><i class="icon-zoom-out icon-white"> </i>&nbsp;&nbsp; Show All Concentrations</a>
+
+			<div id="select_year"> 
+				<h5>Year</h5>
+				<select id="yrs">
+				  <option value = "2000">2000</option>
+				  <option value = "2001">2001</option>
+				  <option value = "2002">2002</option>
+				  <option value = "2003">2003</option>
+				  <option value = "2004">2004</option>
+				  <option value = "2005">2005</option>
+				  <option value = "2006">2006</option>
+				  <option value = "2007">2007</option>
+				  <option value = "2008">2008</option>
+				  <option value = "2009">2009</option>
+				  <option value = "2010">2010</option>
+				  <option value = "2011">2011</option>
+				  <option value = "2012" selected>2012</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+
+
+
+		
+	<script type="text/javascript">
+
+		var tooltip = d3.select("#d3el")
+			.append("div")
+			.attr("id", "tooltip")
+			.style("position", "absolute")
+			.style("background", "rgba(255, 255, 255, 0.8)")
+			.style("font-weight", "bold")
+			.style("border-radius", "4px")
+			.style("box-shadow", "#333333 0px 0px 10px")
+			.style("border", "2px solid steelblue")
+			.style("height", "50px")
+			.style("width", "auto")
+			.style("padding", "3px")
+			.style("z-index", "10")
+			.style("visibility", "hidden")
+			.style("font-size", "10px");
+
+
+		var margin = {top: 100, right: 100, bottom: 100, left: 100},
+			w = 1224 - margin.left - margin.right,
+			h = 768 - margin.top -margin.bottom;
+
+		var padding = 50;
+		var bottomPadding = 200;
+		var average = 0;
+
+		function sort2(a, b){
+			if(a.Category == b.Category){
+				return (a.Concentration < b.Concentration) ? -1: (a.Concentration > b.Concentration) ? 1: 0;
+			}	
+			else{
+				return(a.Category < b.Category) ? -1: 1;
+			}
+
+		}
+		
+		function sort(arr)
+		{
+		    if (arr.length < 2)
+			return arr;
+		 
+		    var middle = parseInt(arr.length / 2);
+		    var left   = arr.slice(0, middle);
+		    var right  = arr.slice(middle, arr.length);
+		 
+		    return merge(sort(left), sort(right));
+		}
+		 
+		function merge(left, right)
+		{
+		    var result = [];
+		 
+		    while (left.length && right.length) {
+				if (left[0].Category <= right[0].Category) {
+				    result.push(left.shift());
+				} 
+				else {
+				    result.push(right.shift());
+				}
+		    }
+		 
+		    while (left.length)
+			result.push(left.shift());
+		 
+		    while (right.length)
+			result.push(right.shift());
+		 
+		    return result;
+		}
+
+
+		var cList =
+			[
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "19",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00407637845955804",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "15",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00320307495195388",
+				"ChangeInPercent": "-0.00087330350760416"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "14",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00296484540448962",
+				"ChangeInPercent": "-0.00023822954746426"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "8",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00173385348938015",
+				"ChangeInPercent": "-0.00123099191510947"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "11",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00240700218818381",
+				"ChangeInPercent": "0.00067314869880366"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "9",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00196121159293964",
+				"ChangeInPercent": "-0.00044579059524417"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "11",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00234741784037559",
+				"ChangeInPercent": "0.00038620624743595"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "15",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00339366515837104",
+				"ChangeInPercent": "0.00104624731799545"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "21",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00466045272969374",
+				"ChangeInPercent": "0.0012667875713227"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "19",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00403397027600849",
+				"ChangeInPercent": "-0.00062648245368525"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "11",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00232952138924185",
+				"ChangeInPercent": "-0.00170444888676664"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "13",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00273396424815983",
+				"ChangeInPercent": "0.00040444285891798"
+			},
+			{
+				"Concentration": "African and African American Studies",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "30",
+				"ChangeInNumber": "17",
+				"PercentofStudents": "0.0059370670888581",
+				"ChangeInPercent": "0.00320310284069827"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "155",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.033254666380605",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "135",
+				"ChangeInNumber": "-20",
+				"PercentofStudents": "0.0288276745675849",
+				"ChangeInPercent": "-0.0044269918130201"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "149",
+				"ChangeInNumber": "14",
+				"PercentofStudents": "0.0315544260906396",
+				"ChangeInPercent": "0.0027267515230547"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "126",
+				"ChangeInNumber": "-23",
+				"PercentofStudents": "0.0273081924577373",
+				"ChangeInPercent": "-0.0042462336329023"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "151",
+				"ChangeInNumber": "25",
+				"PercentofStudents": "0.0330415754923414",
+				"ChangeInPercent": "0.0057333830346041"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "195",
+				"ChangeInNumber": "44",
+				"PercentofStudents": "0.0424929178470255",
+				"ChangeInPercent": "0.0094513423546841"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "173",
+				"ChangeInNumber": "-22",
+				"PercentofStudents": "0.0369184805804524",
+				"ChangeInPercent": "-0.00557443726657311"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "163",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0368778280542986",
+				"ChangeInPercent": "-0.0000406525261537963"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "126",
+				"ChangeInNumber": "-37",
+				"PercentofStudents": "0.0279627163781625",
+				"ChangeInPercent": "-0.0089151116761361"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "113",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.0239915074309979",
+				"ChangeInPercent": "-0.0039712089471646"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "93",
+				"ChangeInNumber": "-20",
+				"PercentofStudents": "0.0196950444726811",
+				"ChangeInPercent": "-0.0042964629583168"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "69",
+				"ChangeInNumber": "-24",
+				"PercentofStudents": "0.0145110410094637",
+				"ChangeInPercent": "-0.0051840034632174"
+			},
+			{
+				"Concentration": "Anthropology",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "73",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0144468632495547",
+				"ChangeInPercent": "-0.0000641777599089989"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "130",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0278910105127655",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "127",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.0271193679265428",
+				"ChangeInPercent": "-0.000771642586222702"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "125",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0264718339686573",
+				"ChangeInPercent": "-0.000647533957885499"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "104",
+				"ChangeInNumber": "-21",
+				"PercentofStudents": "0.0225400953619419",
+				"ChangeInPercent": "-0.0039317386067154"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "101",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.0221006564551422",
+				"ChangeInPercent": "-0.000439438906799698"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "103",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0224449771191981",
+				"ChangeInPercent": "0.000344320664055899"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "114",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0243277848911652",
+				"ChangeInPercent": "0.0018828077719671"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "121",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.0273755656108597",
+				"ChangeInPercent": "0.0030477807196945"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "101",
+				"ChangeInNumber": "-20",
+				"PercentofStudents": "0.0224145583666223",
+				"ChangeInPercent": "-0.0049610072442374"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "159",
+				"ChangeInNumber": "58",
+				"PercentofStudents": "0.0337579617834395",
+				"ChangeInPercent": "0.0113434034168172"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "177",
+				"ChangeInNumber": "18",
+				"PercentofStudents": "0.0374841168996188",
+				"ChangeInPercent": "0.0037261551161793"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "196",
+				"ChangeInNumber": "19",
+				"PercentofStudents": "0.0412197686645636",
+				"ChangeInPercent": "0.0037356517649448"
+			},
+			{
+				"Concentration": "Applied Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "221",
+				"ChangeInNumber": "25",
+				"PercentofStudents": "0.0437363942212547",
+				"ChangeInPercent": "0.0025166255566911"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "14",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00300364728599013",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "10",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00213538330130258",
+				"ChangeInPercent": "-0.00086826398468755"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "6",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00127064803049555",
+				"ChangeInPercent": "-0.00086473527080703"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "8",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00173385348938015",
+				"ChangeInPercent": "0.0004632054588846"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "10",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00218818380743982",
+				"ChangeInPercent": "0.00045433031805967"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "9",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00196121159293964",
+				"ChangeInPercent": "-0.00022697221450018"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "8",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00170721297481861",
+				"ChangeInPercent": "-0.00025399861812103"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "3",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.000678733031674208",
+				"ChangeInPercent": "-0.0010284799431444"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "3",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00066577896138482",
+				"ChangeInPercent": "-0.0000129540702893881"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "9",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00191082802547771",
+				"ChangeInPercent": "0.00124504906409289"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "8",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00169419737399407",
+				"ChangeInPercent": "-0.00021663065148364"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "6",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00126182965299685",
+				"ChangeInPercent": "-0.00043236772099722"
+			},
+			{
+				"Concentration": "Astrophysics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "26",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.00514545814367702",
+				"ChangeInPercent": "0.00388362849068017"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "262",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0562111134949582",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "254",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0542387358530856",
+				"ChangeInPercent": "-0.0019723776418726"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "241",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.0510376958915714",
+				"ChangeInPercent": "-0.0032010399615142"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "234",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0507152145643693",
+				"ChangeInPercent": "-0.000322481327202098"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "225",
+				"ChangeInNumber": "-9",
+				"PercentofStudents": "0.0492341356673961",
+				"ChangeInPercent": "-0.0014810788969732"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "245",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.0533885378078013",
+				"ChangeInPercent": "0.0041544021404052"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "209",
+				"ChangeInNumber": "-36",
+				"PercentofStudents": "0.0446009389671361",
+				"ChangeInPercent": "-0.0087875988406652"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "-209",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "-0.0446009389671361"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biochemical Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "1",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00019790223629527",
+				"ChangeInPercent": "0.00019790223629527"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "280",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0600729457198026",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "267",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.057014734144779",
+				"ChangeInPercent": "-0.0030582115750236"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "297",
+				"ChangeInNumber": "30",
+				"PercentofStudents": "0.0628970775095299",
+				"ChangeInPercent": "0.0058823433647509"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "290",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0628521889900303",
+				"ChangeInPercent": "-0.0000448885194996029"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "308",
+				"ChangeInNumber": "18",
+				"PercentofStudents": "0.0673960612691466",
+				"ChangeInPercent": "0.0045438722791163"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "300",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0653737197646546",
+				"ChangeInPercent": "-0.002022341504492"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "228",
+				"ChangeInNumber": "-72",
+				"PercentofStudents": "0.0486555697823303",
+				"ChangeInPercent": "-0.0167181499823243"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "-228",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "-0.0486555697823303"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "1",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00019790223629527",
+				"ChangeInPercent": "0.00019790223629527"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "17",
+				"ChangeInNumber": "17",
+				"PercentofStudents": "0.0036001694197374",
+				"ChangeInPercent": "0.0036001694197374"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "41",
+				"ChangeInNumber": "24",
+				"PercentofStudents": "0.00862250262881178",
+				"ChangeInPercent": "0.00502233320907438"
+			},
+			{
+				"Concentration": "Biomedical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "48",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00949930734217297",
+				"ChangeInPercent": "0.000876804713361191"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "27",
+				"ChangeInNumber": "27",
+				"PercentofStudents": "0.0057618437900128",
+				"ChangeInPercent": "0.0057618437900128"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "54",
+				"ChangeInNumber": "27",
+				"PercentofStudents": "0.0122171945701357",
+				"ChangeInPercent": "0.0064553507801229"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "33",
+				"ChangeInNumber": "-21",
+				"PercentofStudents": "0.00732356857523302",
+				"ChangeInPercent": "-0.00489362599490268"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "65",
+				"ChangeInNumber": "32",
+				"PercentofStudents": "0.0138004246284501",
+				"ChangeInPercent": "0.00647685605321708"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "59",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0124947056332063",
+				"ChangeInPercent": "-0.0013057189952438"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "57",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.01198738170347",
+				"ChangeInPercent": "-0.000507323929736301"
+			},
+			{
+				"Concentration": "Chemical and Physical Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "59",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0116762319414209",
+				"ChangeInPercent": "-0.000311149762049099"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "78",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0167346063076593",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "77",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0164424514200299",
+				"ChangeInPercent": "-0.0002921548876294"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "73",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0154595510376959",
+				"ChangeInPercent": "-0.000982900382334"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "89",
+				"ChangeInNumber": "16",
+				"PercentofStudents": "0.0192891200693541",
+				"ChangeInPercent": "0.0038295690316582"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "91",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0199124726477024",
+				"ChangeInPercent": "0.0006233525783483"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "86",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0187404663325343",
+				"ChangeInPercent": "-0.0011720063151681"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "82",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0174989329918907",
+				"ChangeInPercent": "-0.0012415333406436"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "91",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.0205882352941176",
+				"ChangeInPercent": "0.0030893023022269"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "90",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0199733688415446",
+				"ChangeInPercent": "-0.000614866452573002"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "84",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0178343949044586",
+				"ChangeInPercent": "-0.002138973937086"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "84",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0177890724269377",
+				"ChangeInPercent": "-0.0000453224775209017"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "78",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.016403785488959",
+				"ChangeInPercent": "-0.0013852869379787"
+			},
+			{
+				"Concentration": "Chemistry",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "95",
+				"ChangeInNumber": "17",
+				"PercentofStudents": "0.0188007124480507",
+				"ChangeInPercent": "0.0023969269590917"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "37",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00793821068440249",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "44",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00939568652573137",
+				"ChangeInPercent": "0.00145747584132888"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "38",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00804743752647183",
+				"ChangeInPercent": "-0.00134824899925954"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "39",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00845253576072822",
+				"ChangeInPercent": "0.00040509823425639"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "45",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00984682713347921",
+				"ChangeInPercent": "0.00139429137275099"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "45",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00980605796469819",
+				"ChangeInPercent": "-0.0000407691687810199"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "45",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00960307298335467",
+				"ChangeInPercent": "-0.00020298498134352"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "34",
+				"ChangeInNumber": "-11",
+				"PercentofStudents": "0.00769230769230769",
+				"ChangeInPercent": "-0.00191076529104698"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "36",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00798934753661784",
+				"ChangeInPercent": "0.000297039844310149"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "27",
+				"ChangeInNumber": "-9",
+				"PercentofStudents": "0.00573248407643312",
+				"ChangeInPercent": "-0.00225686346018472"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "31",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00656501482422702",
+				"ChangeInPercent": "0.0008325307477939"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "37",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00778128286014721",
+				"ChangeInPercent": "0.00121626803592019"
+			},
+			{
+				"Concentration": "Chemistry and Physics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "45",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.00890560063328716",
+				"ChangeInPercent": "0.00112431777313995"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "41",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00879639562325681",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "38",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00811445654494982",
+				"ChangeInPercent": "-0.000681939078306989"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "37",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00783566285472258",
+				"ChangeInPercent": "-0.000278793690227241"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "34",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00736887732986563",
+				"ChangeInPercent": "-0.00046678552485695"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "48",
+				"ChangeInNumber": "14",
+				"PercentofStudents": "0.0105032822757112",
+				"ChangeInPercent": "0.00313440494584557"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "41",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.00893440836783613",
+				"ChangeInPercent": "-0.00156887390787507"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "37",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00789586000853607",
+				"ChangeInPercent": "-0.00103854835930006"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "30",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.00678733031674208",
+				"ChangeInPercent": "-0.00110852969179399"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "34",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00754549489569463",
+				"ChangeInPercent": "0.00075816457895255"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "41",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00870488322717622",
+				"ChangeInPercent": "0.00115938833148159"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "42",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00889453621346887",
+				"ChangeInPercent": "0.00018965298629265"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "36",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00757097791798107",
+				"ChangeInPercent": "-0.0013235582954878"
+			},
+			{
+				"Concentration": "Classics",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "43",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00850979616069662",
+				"ChangeInPercent": "0.000938818242715549"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "43",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00922548809268397",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "47",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0100363015161221",
+				"ChangeInPercent": "0.000810813423438131"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "54",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.01143583227446",
+				"ChangeInPercent": "0.0013995307583379"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "41",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.00888599913307326",
+				"ChangeInPercent": "-0.00254983314138674"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "34",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0074398249452954",
+				"ChangeInPercent": "-0.00144617418777786"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "22",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.00479407278274134",
+				"ChangeInPercent": "-0.00264575216255406"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "18",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00384122919334187",
+				"ChangeInPercent": "-0.00095284358939947"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "26",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.00588235294117647",
+				"ChangeInPercent": "0.0020411237478346"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "34",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.00754549489569463",
+				"ChangeInPercent": "0.00166314195451816"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "30",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00636942675159236",
+				"ChangeInPercent": "-0.00117606814410227"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "29",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00614146548072851",
+				"ChangeInPercent": "-0.000227961270863849"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "23",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00483701366982124",
+				"ChangeInPercent": "-0.00130445181090727"
+			},
+			{
+				"Concentration": "Comparative Study of Religion",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "24",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00474965367108648",
+				"ChangeInPercent": "-0.0000873599987347602"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "203",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0435528856468569",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "174",
+				"ChangeInNumber": "-29",
+				"PercentofStudents": "0.037155669442665",
+				"ChangeInPercent": "-0.0063972162041919"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "139",
+				"ChangeInNumber": "-35",
+				"PercentofStudents": "0.029436679373147",
+				"ChangeInPercent": "-0.007718990069518"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "98",
+				"ChangeInNumber": "-41",
+				"PercentofStudents": "0.0212397052449068",
+				"ChangeInPercent": "-0.0081969741282402"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "79",
+				"ChangeInNumber": "-19",
+				"PercentofStudents": "0.0172866520787746",
+				"ChangeInPercent": "-0.0039530531661322"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "67",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.0146001307474395",
+				"ChangeInPercent": "-0.0026865213313351"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "64",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.0136577037985489",
+				"ChangeInPercent": "-0.000942426948890599"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "65",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0147058823529412",
+				"ChangeInPercent": "0.0010481785543923"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "86",
+				"ChangeInNumber": "21",
+				"PercentofStudents": "0.0190856635596982",
+				"ChangeInPercent": "0.004379781206757"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "86",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0182590233545648",
+				"ChangeInPercent": "-0.0008266402051334"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "99",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.0209656925031766",
+				"ChangeInPercent": "0.0027066691486118"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "143",
+				"ChangeInNumber": "44",
+				"PercentofStudents": "0.0300736067297581",
+				"ChangeInPercent": "0.0091079142265815"
+			},
+			{
+				"Concentration": "Computer Science",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "225",
+				"ChangeInNumber": "82",
+				"PercentofStudents": "0.0445280031664358",
+				"ChangeInPercent": "0.0144543964366777"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "25",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00536365586783952",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "27",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00576553491351698",
+				"ChangeInPercent": "0.00040187904567746"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "21",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00444726810673443",
+				"ChangeInPercent": "-0.00131826680678255"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "24",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00520156046814044",
+				"ChangeInPercent": "0.000754292361406009"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "23",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0050328227571116",
+				"ChangeInPercent": "-0.00016873771102884"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "34",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.00740902157332752",
+				"ChangeInPercent": "0.00237619881621592"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "37",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00789586000853607",
+				"ChangeInPercent": "0.00048683843520855"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "26",
+				"ChangeInNumber": "-11",
+				"PercentofStudents": "0.00588235294117647",
+				"ChangeInPercent": "-0.0020135070673596"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "24",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00532623169107856",
+				"ChangeInPercent": "-0.00055612125009791"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "27",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00573248407643312",
+				"ChangeInPercent": "0.00040625238535456"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "17",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0036001694197374",
+				"ChangeInPercent": "-0.00213231465669572"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "17",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0035751840168244",
+				"ChangeInPercent": "-0.0000249854029130002"
+			},
+			{
+				"Concentration": "Earth and Planetary Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "26",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.00514545814367702",
+				"ChangeInPercent": "0.00157027412685262"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "43",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00922548809268397",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "39",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00832799487508008",
+				"ChangeInPercent": "-0.000897493217603891"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "48",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.0101651842439644",
+				"ChangeInPercent": "0.00183718936888432"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "32",
+				"ChangeInNumber": "-16",
+				"PercentofStudents": "0.00693541395752059",
+				"ChangeInPercent": "-0.00322977028644381"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "26",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00568927789934354",
+				"ChangeInPercent": "-0.00124613605817705"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "21",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.00457616038352582",
+				"ChangeInPercent": "-0.00111311751581772"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "25",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00533504054630815",
+				"ChangeInPercent": "0.00075888016278233"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "32",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00723981900452489",
+				"ChangeInPercent": "0.00190477845821674"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "40",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.00887705281846427",
+				"ChangeInPercent": "0.00163723381393938"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "32",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00679405520169851",
+				"ChangeInPercent": "-0.00208299761676576"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "31",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00656501482422702",
+				"ChangeInPercent": "-0.00022904037747149"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "41",
+				"ChangeInNumber": "10",
+				"PercentofStudents": "0.00862250262881178",
+				"ChangeInPercent": "0.00205748780458476"
+			},
+			{
+				"Concentration": "East Asian Studies",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "61",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.0120720364140115",
+				"ChangeInPercent": "0.00344953378519972"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "583",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.125080454838018",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "624",
+				"ChangeInNumber": "41",
+				"PercentofStudents": "0.133247918001281",
+				"ChangeInPercent": "0.008167463163263"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "666",
+				"ChangeInNumber": "42",
+				"PercentofStudents": "0.141041931385006",
+				"ChangeInPercent": "0.00779401338372501"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "643",
+				"ChangeInNumber": "-23",
+				"PercentofStudents": "0.139358474208929",
+				"ChangeInPercent": "-0.00168345717607701"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "686",
+				"ChangeInNumber": "43",
+				"PercentofStudents": "0.150109409190372",
+				"ChangeInPercent": "0.010750934981443"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "686",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.149487905861844",
+				"ChangeInPercent": "-0.000621503328528006"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "733",
+				"ChangeInNumber": "47",
+				"PercentofStudents": "0.156423388817755",
+				"ChangeInPercent": "0.00693548295591101"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "769",
+				"ChangeInNumber": "36",
+				"PercentofStudents": "0.173981900452489",
+				"ChangeInPercent": "0.017558511634734"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "742",
+				"ChangeInNumber": "-27",
+				"PercentofStudents": "0.164669329782512",
+				"ChangeInPercent": "-0.00931257066997701"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "698",
+				"ChangeInNumber": "-44",
+				"PercentofStudents": "0.148195329087049",
+				"ChangeInPercent": "-0.016474000695463"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "635",
+				"ChangeInNumber": "-63",
+				"PercentofStudents": "0.134476916560779",
+				"ChangeInPercent": "-0.01371841252627"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "621",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.130599369085174",
+				"ChangeInPercent": "-0.00387754747560501"
+			},
+			{
+				"Concentration": "Economics",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "564",
+				"ChangeInNumber": "-57",
+				"PercentofStudents": "0.111616861270532",
+				"ChangeInPercent": "-0.018982507814642"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Electrical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "20",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.0039580447259054",
+				"ChangeInPercent": "0.0039580447259054"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "79",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0169491525423729",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "67",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.0143070681187273",
+				"ChangeInPercent": "-0.0026420844236456"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "80",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.0169419737399407",
+				"ChangeInPercent": "0.0026349056212134"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "38",
+				"ChangeInNumber": "-42",
+				"PercentofStudents": "0.0082358040745557",
+				"ChangeInPercent": "-0.008706169665385"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "99",
+				"ChangeInNumber": "61",
+				"PercentofStudents": "0.0216630196936543",
+				"ChangeInPercent": "0.0134272156190986"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "111",
+				"ChangeInNumber": "12",
+				"PercentofStudents": "0.0241882763129222",
+				"ChangeInPercent": "0.0025252566192679"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "106",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0226205719163466",
+				"ChangeInPercent": "-0.0015677043965756"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "99",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0223981900452489",
+				"ChangeInPercent": "-0.000222381871097698"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "110",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0244118952507767",
+				"ChangeInPercent": "0.0020137052055278"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "145",
+				"ChangeInNumber": "35",
+				"PercentofStudents": "0.0307855626326964",
+				"ChangeInPercent": "0.0063736673819197"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "148",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0313426514188903",
+				"ChangeInPercent": "0.000557088786193895"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "165",
+				"ChangeInNumber": "17",
+				"PercentofStudents": "0.0347003154574132",
+				"ChangeInPercent": "0.0033576640385229"
+			},
+			{
+				"Concentration": "Engineering Sciences",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "138",
+				"ChangeInNumber": "-27",
+				"PercentofStudents": "0.0273105086087473",
+				"ChangeInPercent": "-0.0073898068486659"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "222",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0476292641064149",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "231",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.0493273542600897",
+				"ChangeInPercent": "0.00169809015367479"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "242",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0512494705633206",
+				"ChangeInPercent": "0.0019221163032309"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "270",
+				"ChangeInNumber": "28",
+				"PercentofStudents": "0.05851755526658",
+				"ChangeInPercent": "0.0072680847032594"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "246",
+				"ChangeInNumber": "-24",
+				"PercentofStudents": "0.0538293216630197",
+				"ChangeInPercent": "-0.0046882336035603"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "247",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0538243626062323",
+				"ChangeInPercent": "-0.0000049590567874"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "245",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0522833973538199",
+				"ChangeInPercent": "-0.0015409652524124"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "257",
+				"ChangeInNumber": "12",
+				"PercentofStudents": "0.0581447963800905",
+				"ChangeInPercent": "0.0058613990262706"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "236",
+				"ChangeInNumber": "-21",
+				"PercentofStudents": "0.0523746116289392",
+				"ChangeInPercent": "-0.0057701847511513"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "209",
+				"ChangeInNumber": "-27",
+				"PercentofStudents": "0.0443736730360934",
+				"ChangeInPercent": "-0.0080009385928458"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "197",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.041719610334604",
+				"ChangeInPercent": "-0.0026540627014894"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "182",
+				"ChangeInNumber": "-15",
+				"PercentofStudents": "0.0382754994742376",
+				"ChangeInPercent": "-0.0034441108603664"
+			},
+			{
+				"Concentration": "English",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "173",
+				"ChangeInNumber": "-9",
+				"PercentofStudents": "0.0342370868790817",
+				"ChangeInPercent": "-0.00403841259515589"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "87",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0186655224200815",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "82",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0175101430706812",
+				"ChangeInPercent": "-0.0011553793494003"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "77",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0163066497246929",
+				"ChangeInPercent": "-0.0012034933459883"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "56",
+				"ChangeInNumber": "-21",
+				"PercentofStudents": "0.012136974425661",
+				"ChangeInPercent": "-0.0041696752990319"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "46",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0100656455142232",
+				"ChangeInPercent": "-0.0020713289114378"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "52",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.0113314447592068",
+				"ChangeInPercent": "0.0012657992449836"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "67",
+				"ChangeInNumber": "15",
+				"PercentofStudents": "0.0142979086641058",
+				"ChangeInPercent": "0.002966463904899"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "53",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.0119909502262443",
+				"ChangeInPercent": "-0.0023069584378615"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "52",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0115401686640036",
+				"ChangeInPercent": "-0.000450781562240699"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "45",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.00955414012738853",
+				"ChangeInPercent": "-0.00198602853661507"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "48",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0101651842439644",
+				"ChangeInPercent": "0.00061104411657587"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "40",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00841219768664564",
+				"ChangeInPercent": "-0.00175298655731876"
+			},
+			{
+				"Concentration": "Environmental Science and Public Policy",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "42",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00831189392440135",
+				"ChangeInPercent": "-0.00010030376224429"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "14",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00300364728599013",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "17",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00363015161221439",
+				"ChangeInPercent": "0.00062650432622426"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "20",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00423549343498518",
+				"ChangeInPercent": "0.00060534182277079"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "17",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00368443866493281",
+				"ChangeInPercent": "-0.00055105477005237"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "11",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00240700218818381",
+				"ChangeInPercent": "-0.001277436476749"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "9",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00196121159293964",
+				"ChangeInPercent": "-0.00044579059524417"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "11",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00234741784037559",
+				"ChangeInPercent": "0.00038620624743595"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "14",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00316742081447964",
+				"ChangeInPercent": "0.00082000297410405"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "13",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00288504216600089",
+				"ChangeInPercent": "-0.00028237864847875"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "18",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.00382165605095541",
+				"ChangeInPercent": "0.00093661388495452"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "10",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00211774671749259",
+				"ChangeInPercent": "-0.00170390933346282"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "14",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00294426919032597",
+				"ChangeInPercent": "0.00082652247283338"
+			},
+			{
+				"Concentration": "Folklore and Mythology",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "11",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00217692459924797",
+				"ChangeInPercent": "-0.000767344591078"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "9",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00193091611242223",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "5",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00106769165065129",
+				"ChangeInPercent": "-0.00086322446177094"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "3",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.000635324015247776",
+				"ChangeInPercent": "-0.000432367635403514"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "3",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000650195058517555",
+				"ChangeInPercent": "0.000014871043269779"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "6",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00131291028446389",
+				"ChangeInPercent": "0.000662715225946335"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "2",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.000435824798431031",
+				"ChangeInPercent": "-0.000877085486032859"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "1",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.000213401621852326",
+				"ChangeInPercent": "-0.000222423176578705"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "2",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.000452488687782805",
+				"ChangeInPercent": "0.000239087065930479"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "3",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00066577896138482",
+				"ChangeInPercent": "0.000213290273602015"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "6",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00127388535031847",
+				"ChangeInPercent": "0.00060810638893365"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "4",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.000847098686997035",
+				"ChangeInPercent": "-0.000426786663321435"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "4",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000841219768664564",
+				"ChangeInPercent": "-0.00000587891833247101"
+			},
+			{
+				"Concentration": "Germanic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "6",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00118741341777162",
+				"ChangeInPercent": "0.000346193649107056"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "463",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0993349066723879",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "547",
+				"ChangeInNumber": "84",
+				"PercentofStudents": "0.116805466581251",
+				"ChangeInPercent": "0.0174705599088631"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "553",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.11711139347734",
+				"ChangeInPercent": "0.000305926896088993"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "552",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.11963589076723",
+				"ChangeInPercent": "0.00252449728989"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "549",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.120131291028446",
+				"ChangeInPercent": "0.000495400261216"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "575",
+				"ChangeInNumber": "26",
+				"PercentofStudents": "0.125299629548921",
+				"ChangeInPercent": "0.00516833852047499"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "532",
+				"ChangeInNumber": "-43",
+				"PercentofStudents": "0.113529662825437",
+				"ChangeInPercent": "-0.011769966723484"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "495",
+				"ChangeInNumber": "-37",
+				"PercentofStudents": "0.111990950226244",
+				"ChangeInPercent": "-0.001538712599193"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "477",
+				"ChangeInNumber": "-18",
+				"PercentofStudents": "0.105858854860186",
+				"ChangeInPercent": "-0.00613209536605801"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "467",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0991507430997877",
+				"ChangeInPercent": "-0.00670811176039829"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "475",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.100592969080898",
+				"ChangeInPercent": "0.0014422259811103"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "473",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0994742376445846",
+				"ChangeInPercent": "-0.0011187314363134"
+			},
+			{
+				"Concentration": "Government",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "467",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0924203443498912",
+				"ChangeInPercent": "-0.0070538932946934"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "231",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0495601802188372",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "280",
+				"ChangeInNumber": "49",
+				"PercentofStudents": "0.0597907324364723",
+				"ChangeInPercent": "0.0102305522176351"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "280",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0592969080897925",
+				"ChangeInPercent": "-0.0004938243466798"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "293",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.0635023840485479",
+				"ChangeInPercent": "0.00420547595875539"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "234",
+				"ChangeInNumber": "-59",
+				"PercentofStudents": "0.0512035010940919",
+				"ChangeInPercent": "-0.012298882954456"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "219",
+				"ChangeInNumber": "-15",
+				"PercentofStudents": "0.0477228154281979",
+				"ChangeInPercent": "-0.003480685665894"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "197",
+				"ChangeInNumber": "-22",
+				"PercentofStudents": "0.0420401195049082",
+				"ChangeInPercent": "-0.0056826959232897"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "220",
+				"ChangeInNumber": "23",
+				"PercentofStudents": "0.0497737556561086",
+				"ChangeInPercent": "0.0077336361512004"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "231",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0512649800266312",
+				"ChangeInPercent": "0.0014912243705226"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "216",
+				"ChangeInNumber": "-15",
+				"PercentofStudents": "0.045859872611465",
+				"ChangeInPercent": "-0.0054051074151662"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "184",
+				"ChangeInNumber": "-32",
+				"PercentofStudents": "0.0389665396018636",
+				"ChangeInPercent": "-0.0068933330096014"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "170",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.035751840168244",
+				"ChangeInPercent": "-0.0032146994336196"
+			},
+			{
+				"Concentration": "History",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "162",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0320601622798338",
+				"ChangeInPercent": "-0.0036916778884102"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "248",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.053207466208968",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "210",
+				"ChangeInNumber": "-38",
+				"PercentofStudents": "0.0448430493273543",
+				"ChangeInPercent": "-0.0083644168816137"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "197",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.041719610334604",
+				"ChangeInPercent": "-0.0031234389927503"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "192",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0416124837451235",
+				"ChangeInPercent": "-0.000107126589480498"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "167",
+				"ChangeInNumber": "-25",
+				"PercentofStudents": "0.0365426695842451",
+				"ChangeInPercent": "-0.00506981416087841"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "165",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.03595554587056",
+				"ChangeInPercent": "-0.000587123713685099"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "158",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0337174562526675",
+				"ChangeInPercent": "-0.0022380896178925"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "162",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0366515837104072",
+				"ChangeInPercent": "0.0029341274577397"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "152",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0337328007101642",
+				"ChangeInPercent": "-0.002918783000243"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "151",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0320594479830149",
+				"ChangeInPercent": "-0.0016733527271493"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "151",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0319779754341381",
+				"ChangeInPercent": "-0.0000814725488768042"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "138",
+				"ChangeInNumber": "-13",
+				"PercentofStudents": "0.0290220820189274",
+				"ChangeInPercent": "-0.0029558934152107"
+			},
+			{
+				"Concentration": "History and Literature",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "143",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0283000197902236",
+				"ChangeInPercent": "-0.000722062228703798"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "150",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0321819352070371",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "139",
+				"ChangeInNumber": "-11",
+				"PercentofStudents": "0.0296818278881059",
+				"ChangeInPercent": "-0.0025001073189312"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "121",
+				"ChangeInNumber": "-18",
+				"PercentofStudents": "0.0256247352816603",
+				"ChangeInPercent": "-0.0040570926064456"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "100",
+				"ChangeInNumber": "-21",
+				"PercentofStudents": "0.0216731686172518",
+				"ChangeInPercent": "-0.0039515666644085"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "92",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0201312910284464",
+				"ChangeInPercent": "-0.0015418775888054"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "88",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0191762911309654",
+				"ChangeInPercent": "-0.000954999897481001"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "85",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.0181391378574477",
+				"ChangeInPercent": "-0.0010371532735177"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "83",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0187782805429864",
+				"ChangeInPercent": "0.000639142685538701"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "109",
+				"ChangeInNumber": "26",
+				"PercentofStudents": "0.0241899689303151",
+				"ChangeInPercent": "0.0054116883873287"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "116",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.0246284501061571",
+				"ChangeInPercent": "0.000438481175842002"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "135",
+				"ChangeInNumber": "19",
+				"PercentofStudents": "0.0285895806861499",
+				"ChangeInPercent": "0.0039611305799928"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "118",
+				"ChangeInNumber": "-17",
+				"PercentofStudents": "0.0248159831756046",
+				"ChangeInPercent": "-0.0037735975105453"
+			},
+			{
+				"Concentration": "History and Science",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "130",
+				"ChangeInNumber": "12",
+				"PercentofStudents": "0.0257272907183851",
+				"ChangeInPercent": "0.000911307542780501"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "47",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0100836730315383",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "45",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00960922485586163",
+				"ChangeInPercent": "-0.00047444817567667"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "58",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.012282930961457",
+				"ChangeInPercent": "0.00267370610559537"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "57",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.0123537061118336",
+				"ChangeInPercent": "0.0000707751503766004"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "50",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0109409190371991",
+				"ChangeInPercent": "-0.0014127870746345"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "51",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0111135323599913",
+				"ChangeInPercent": "0.0001726133227922"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "47",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0100298762270593",
+				"ChangeInPercent": "-0.001083656132932"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "48",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0108597285067873",
+				"ChangeInPercent": "0.000829852279728"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "62",
+				"ChangeInNumber": "14",
+				"PercentofStudents": "0.0137594318686196",
+				"ChangeInPercent": "0.0028997033618323"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "52",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0110403397027601",
+				"ChangeInPercent": "-0.0027190921658595"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "60",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.0127064803049555",
+				"ChangeInPercent": "0.0016661406021954"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "63",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0132492113564669",
+				"ChangeInPercent": "0.0005427310515114"
+			},
+			{
+				"Concentration": "History of Art and Architecture",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "73",
+				"ChangeInNumber": "10",
+				"PercentofStudents": "0.0144468632495547",
+				"ChangeInPercent": "0.0011976518930878"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "50",
+				"ChangeInNumber": "50",
+				"PercentofStudents": "0.0106157112526539",
+				"ChangeInPercent": "0.0106157112526539"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "95",
+				"ChangeInNumber": "45",
+				"PercentofStudents": "0.0201185938161796",
+				"ChangeInPercent": "0.0095028825635257"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "141",
+				"ChangeInNumber": "46",
+				"PercentofStudents": "0.0296529968454259",
+				"ChangeInPercent": "0.0095344030292463"
+			},
+			{
+				"Concentration": "Human Developmental and Regenerative Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "142",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0281021175539284",
+				"ChangeInPercent": "-0.0015508792914975"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "72",
+				"ChangeInNumber": "72",
+				"PercentofStudents": "0.0153649167733675",
+				"ChangeInPercent": "0.0153649167733675"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "110",
+				"ChangeInNumber": "38",
+				"PercentofStudents": "0.0248868778280543",
+				"ChangeInPercent": "0.0095219610546868"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "132",
+				"ChangeInNumber": "22",
+				"PercentofStudents": "0.0292942743009321",
+				"ChangeInPercent": "0.0044073964728778"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "130",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0276008492569002",
+				"ChangeInPercent": "-0.0016934250440319"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "133",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0281660313426514",
+				"ChangeInPercent": "0.000565182085751202"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "138",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0290220820189274",
+				"ChangeInPercent": "0.000856050676275998"
+			},
+			{
+				"Concentration": "Human Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "152",
+				"ChangeInNumber": "14",
+				"PercentofStudents": "0.0300811399168811",
+				"ChangeInPercent": "0.0010590578979537"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "31",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.006650933276121",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "32",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00683322656416827",
+				"ChangeInPercent": "0.00018229328804727"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "35",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00741211351122406",
+				"ChangeInPercent": "0.00057888694705579"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "27",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.005851755526658",
+				"ChangeInPercent": "-0.00156035798456606"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "33",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00722100656455142",
+				"ChangeInPercent": "0.00136925103789342"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "31",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00675528437568098",
+				"ChangeInPercent": "-0.00046572218887044"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "25",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00533504054630815",
+				"ChangeInPercent": "-0.00142024382937283"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "31",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00701357466063348",
+				"ChangeInPercent": "0.00167853411432533"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "12",
+				"ChangeInNumber": "-19",
+				"PercentofStudents": "0.00266311584553928",
+				"ChangeInPercent": "-0.0043504588150942"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "29",
+				"ChangeInNumber": "17",
+				"PercentofStudents": "0.00615711252653928",
+				"ChangeInPercent": "0.003493996681"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "30",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00635324015247776",
+				"ChangeInPercent": "0.00019612762593848"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "24",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00504731861198738",
+				"ChangeInPercent": "-0.00130592154049038"
+			},
+			{
+				"Concentration": "Linguistics",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "31",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00613496932515337",
+				"ChangeInPercent": "0.00108765071316599"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "63",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0135164127869556",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "52",
+				"ChangeInNumber": "-11",
+				"PercentofStudents": "0.0111039931667734",
+				"ChangeInPercent": "-0.0024124196201822"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "60",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.0127064803049555",
+				"ChangeInPercent": "0.0016024871381821"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "55",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0119202427394885",
+				"ChangeInPercent": "-0.000786237565467"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "53",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0115973741794311",
+				"ChangeInPercent": "-0.000322868560057398"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "45",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00980605796469819",
+				"ChangeInPercent": "-0.00179131621473291"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "44",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00938967136150235",
+				"ChangeInPercent": "-0.00041638660319584"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "50",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.0113122171945701",
+				"ChangeInPercent": "0.00192254583306775"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "48",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0106524633821571",
+				"ChangeInPercent": "-0.000659753812413"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "38",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.00806794055201699",
+				"ChangeInPercent": "-0.00258452283014011"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "41",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00868276154171961",
+				"ChangeInPercent": "0.000614820989702621"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "40",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00841219768664564",
+				"ChangeInPercent": "-0.000270563855073971"
+			},
+			{
+				"Concentration": "Literature",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "42",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00831189392440135",
+				"ChangeInPercent": "-0.00010030376224429"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "78",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0167346063076593",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "89",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.019004911381593",
+				"ChangeInPercent": "0.0022703050739337"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "69",
+				"ChangeInNumber": "-20",
+				"PercentofStudents": "0.0146124523506989",
+				"ChangeInPercent": "-0.0043924590308941"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "73",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0158214130905938",
+				"ChangeInPercent": "0.0012089607398949"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "65",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0142231947483589",
+				"ChangeInPercent": "-0.0015982183422349"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "77",
+				"ChangeInNumber": "12",
+				"PercentofStudents": "0.0167792547395947",
+				"ChangeInPercent": "0.0025560599912358"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "95",
+				"ChangeInNumber": "18",
+				"PercentofStudents": "0.020273154075971",
+				"ChangeInPercent": "0.0034938993363763"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "86",
+				"ChangeInNumber": "-9",
+				"PercentofStudents": "0.0194570135746606",
+				"ChangeInPercent": "-0.000816140501310399"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "87",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0193075898801598",
+				"ChangeInPercent": "-0.0001494236945008"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "80",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0169851380042463",
+				"ChangeInPercent": "-0.0023224518759135"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "75",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0158831003811944",
+				"ChangeInPercent": "-0.0011020376230519"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "76",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0159831756046267",
+				"ChangeInPercent": "0.000100075223432302"
+			},
+			{
+				"Concentration": "Mathematics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "138",
+				"ChangeInNumber": "62",
+				"PercentofStudents": "0.0273105086087473",
+				"ChangeInPercent": "0.0113273330041206"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Mechanical Engineering",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "26",
+				"ChangeInNumber": "26",
+				"PercentofStudents": "0.00514545814367702",
+				"ChangeInPercent": "0.00514545814367702"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "55",
+				"ChangeInNumber": "55",
+				"PercentofStudents": "0.0117370892018779",
+				"ChangeInPercent": "0.0117370892018779"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "117",
+				"ChangeInNumber": "62",
+				"PercentofStudents": "0.0264705882352941",
+				"ChangeInPercent": "0.0147334990334162"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "162",
+				"ChangeInNumber": "45",
+				"PercentofStudents": "0.0359520639147803",
+				"ChangeInPercent": "0.0094814756794862"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "184",
+				"ChangeInNumber": "22",
+				"PercentofStudents": "0.0390658174097665",
+				"ChangeInPercent": "0.0031137534949862"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "151",
+				"ChangeInNumber": "-33",
+				"PercentofStudents": "0.0319779754341381",
+				"ChangeInPercent": "-0.0070878419756284"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "114",
+				"ChangeInNumber": "-37",
+				"PercentofStudents": "0.0239747634069401",
+				"ChangeInPercent": "-0.008003212027198"
+			},
+			{
+				"Concentration": "Molecular and Cellular Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "84",
+				"ChangeInNumber": "-30",
+				"PercentofStudents": "0.0166237878488027",
+				"ChangeInPercent": "-0.0073509755581374"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "22",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00472001716369878",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "27",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.00576553491351698",
+				"ChangeInPercent": "0.0010455177498182"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "24",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00508259212198221",
+				"ChangeInPercent": "-0.00068294279153477"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "31",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00671868227134807",
+				"ChangeInPercent": "0.00163609014936586"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "24",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.00525164113785558",
+				"ChangeInPercent": "-0.00146704113349249"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "17",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.00370451078666376",
+				"ChangeInPercent": "-0.00154713035119182"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "25",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.00533504054630815",
+				"ChangeInPercent": "0.00163052975964439"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "28",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00633484162895928",
+				"ChangeInPercent": "0.000999801082651131"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "30",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0066577896138482",
+				"ChangeInPercent": "0.000322947984888919"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "26",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00552016985138004",
+				"ChangeInPercent": "-0.00113761976246816"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "21",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.00444726810673443",
+				"ChangeInPercent": "-0.00107290174464561"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "18",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00378548895899054",
+				"ChangeInPercent": "-0.00066177914774389"
+			},
+			{
+				"Concentration": "Music",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "19",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00376014248961013",
+				"ChangeInPercent": "-0.0000253464693804098"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "11",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00236000858184939",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "11",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00234892163143284",
+				"ChangeInPercent": "-0.0000110869504165501"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "7",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00148242270224481",
+				"ChangeInPercent": "-0.00086649892918803"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "6",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00130039011703511",
+				"ChangeInPercent": "-0.0001820325852097"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "6",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00131291028446389",
+				"ChangeInPercent": "0.0000125201674287801"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "10",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00217912399215515",
+				"ChangeInPercent": "0.00086621370769126"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "13",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00277422108408024",
+				"ChangeInPercent": "0.00059509709192509"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "12",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00271493212669683",
+				"ChangeInPercent": "-0.0000592889573834102"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "13",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00288504216600089",
+				"ChangeInPercent": "0.00017011003930406"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "10",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00212314225053079",
+				"ChangeInPercent": "-0.0007618999154701"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "14",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00296484540448962",
+				"ChangeInPercent": "0.00084170315395883"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "17",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0035751840168244",
+				"ChangeInPercent": "0.00061033861233478"
+			},
+			{
+				"Concentration": "Near Eastern Languages and Civilizations",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "21",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00415594696220067",
+				"ChangeInPercent": "0.00058076294537627"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "52",
+				"ChangeInNumber": "52",
+				"PercentofStudents": "0.011096884336321",
+				"ChangeInPercent": "0.011096884336321"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "111",
+				"ChangeInNumber": "59",
+				"PercentofStudents": "0.0251131221719457",
+				"ChangeInPercent": "0.0140162378356247"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "157",
+				"ChangeInNumber": "46",
+				"PercentofStudents": "0.0348424323124723",
+				"ChangeInPercent": "0.0097293101405266"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "207",
+				"ChangeInNumber": "50",
+				"PercentofStudents": "0.0439490445859873",
+				"ChangeInPercent": "0.009106612273515"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "227",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.0480728504870817",
+				"ChangeInPercent": "0.0041238059010944"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "253",
+				"ChangeInNumber": "26",
+				"PercentofStudents": "0.0532071503680336",
+				"ChangeInPercent": "0.0051342998809519"
+			},
+			{
+				"Concentration": "Neurobiology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "229",
+				"ChangeInNumber": "-24",
+				"PercentofStudents": "0.0453196121116169",
+				"ChangeInPercent": "-0.0078875382564167"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "0",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "23",
+				"ChangeInNumber": "23",
+				"PercentofStudents": "0.0049082373026035",
+				"ChangeInPercent": "0.0049082373026035"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "51",
+				"ChangeInNumber": "28",
+				"PercentofStudents": "0.0115384615384615",
+				"ChangeInPercent": "0.006630224235858"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "34",
+				"ChangeInNumber": "-17",
+				"PercentofStudents": "0.00754549489569463",
+				"ChangeInPercent": "-0.00399296664276687"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "84",
+				"ChangeInNumber": "50",
+				"PercentofStudents": "0.0178343949044586",
+				"ChangeInPercent": "0.010288900008764"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "107",
+				"ChangeInNumber": "23",
+				"PercentofStudents": "0.0226598898771707",
+				"ChangeInPercent": "0.0048254949727121"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "120",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.0252365930599369",
+				"ChangeInPercent": "0.0025767031827662"
+			},
+			{
+				"Concentration": "Organismic and Evolutionary Biology",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "120",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0237482683554324",
+				"ChangeInPercent": "-0.0014883247045045"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "66",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0141600514910963",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "67",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0143070681187273",
+				"ChangeInPercent": "0.000147016627630999"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "59",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0124947056332063",
+				"ChangeInPercent": "-0.001812362485521"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "64",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0138708279150412",
+				"ChangeInPercent": "0.0013761222818349"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "62",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0135667396061269",
+				"ChangeInPercent": "-0.0003040883089143"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "56",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0122030943560689",
+				"ChangeInPercent": "-0.001363645250058"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "47",
+				"ChangeInNumber": "-9",
+				"PercentofStudents": "0.0100298762270593",
+				"ChangeInPercent": "-0.0021732181290096"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "43",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00972850678733032",
+				"ChangeInPercent": "-0.00030136943972898"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "48",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0106524633821571",
+				"ChangeInPercent": "0.00092395659482678"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "61",
+				"ChangeInNumber": "13",
+				"PercentofStudents": "0.0129511677282378",
+				"ChangeInPercent": "0.0022987043460807"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "53",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0112240576027107",
+				"ChangeInPercent": "-0.0017271101255271"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "58",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0121976866456362",
+				"ChangeInPercent": "0.0009736290429255"
+			},
+			{
+				"Concentration": "Philosophy",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "60",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0118741341777162",
+				"ChangeInPercent": "-0.000323552467919999"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "93",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.019952799828363",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "87",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0185778347213325",
+				"ChangeInPercent": "-0.0013749651070305"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "90",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0190597204574333",
+				"ChangeInPercent": "0.0004818857361008"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "88",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0190723883831816",
+				"ChangeInPercent": "0.0000126679257483019"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "78",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0170678336980306",
+				"ChangeInPercent": "-0.002004554685151"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "74",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0161255175419481",
+				"ChangeInPercent": "-0.0009423161560825"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "75",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0160051216389245",
+				"ChangeInPercent": "-0.000120395903023599"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "70",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0158371040723982",
+				"ChangeInPercent": "-0.000168017566526301"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "79",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.0175321793164669",
+				"ChangeInPercent": "0.0016950752440687"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "64",
+				"ChangeInNumber": "-15",
+				"PercentofStudents": "0.013588110403397",
+				"ChangeInPercent": "-0.0039440689130699"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "57",
+				"ChangeInNumber": "-7",
+				"PercentofStudents": "0.0120711562897078",
+				"ChangeInPercent": "-0.0015169541136892"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "38",
+				"ChangeInNumber": "-19",
+				"PercentofStudents": "0.00799158780231335",
+				"ChangeInPercent": "-0.00407956848739445"
+			},
+			{
+				"Concentration": "Physics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "101",
+				"ChangeInNumber": "63",
+				"PercentofStudents": "0.0199881258658223",
+				"ChangeInPercent": "0.011996538063509"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "328",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0703711649860545",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "328",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0700405722827248",
+				"ChangeInPercent": "-0.000330592703329705"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "318",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0673443456162643",
+				"ChangeInPercent": "-0.00269622666646049"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "388",
+				"ChangeInNumber": "70",
+				"PercentofStudents": "0.0840918942349372",
+				"ChangeInPercent": "0.0167475486186729"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "352",
+				"ChangeInNumber": "-36",
+				"PercentofStudents": "0.0770240700218818",
+				"ChangeInPercent": "-0.00706782421305539"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "347",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0756156025277838",
+				"ChangeInPercent": "-0.001408467494098"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "336",
+				"ChangeInNumber": "-11",
+				"PercentofStudents": "0.0717029449423816",
+				"ChangeInPercent": "-0.00391265758540221"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "292",
+				"ChangeInNumber": "-44",
+				"PercentofStudents": "0.0660633484162896",
+				"ChangeInPercent": "-0.005639596526092"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "288",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0639147802929427",
+				"ChangeInPercent": "-0.00214856812334689"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "284",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0602972399150743",
+				"ChangeInPercent": "-0.00361754037786841"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "294",
+				"ChangeInNumber": "10",
+				"PercentofStudents": "0.0622617534942821",
+				"ChangeInPercent": "0.0019645135792078"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "282",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.0593059936908517",
+				"ChangeInPercent": "-0.0029557598034304"
+			},
+			{
+				"Concentration": "Psychology",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "272",
+				"ChangeInNumber": "-10",
+				"PercentofStudents": "0.0538294082723135",
+				"ChangeInPercent": "-0.0054765854185382"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "41",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00879639562325681",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "37",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00790091821481956",
+				"ChangeInPercent": "-0.00089547740843725"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "44",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00931808555696739",
+				"ChangeInPercent": "0.00141716734214783"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "46",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00996965756393585",
+				"ChangeInPercent": "0.000651572006968458"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "50",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0109409190371991",
+				"ChangeInPercent": "0.000971261473263251"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "54",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0117672695576378",
+				"ChangeInPercent": "0.000826350520438701"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "42",
+				"ChangeInNumber": "-12",
+				"PercentofStudents": "0.0089628681177977",
+				"ChangeInPercent": "-0.0028044014398401"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "36",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0081447963800905",
+				"ChangeInPercent": "-0.000818071737707199"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "43",
+				"ChangeInNumber": "7",
+				"PercentofStudents": "0.00954283177984909",
+				"ChangeInPercent": "0.00139803539975859"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "46",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00976645435244161",
+				"ChangeInPercent": "0.00022362257259252"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "48",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.0101651842439644",
+				"ChangeInPercent": "0.00039872989152279"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "51",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0107255520504732",
+				"ChangeInPercent": "0.0005603678065088"
+			},
+			{
+				"Concentration": "Romance Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "45",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.00890560063328716",
+				"ChangeInPercent": "-0.00181995141718604"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "9",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00193091611242223",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "8",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00170830664104207",
+				"ChangeInPercent": "-0.00022260947138016"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "10",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00211774671749259",
+				"ChangeInPercent": "0.00040944007645052"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "9",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00195058517555267",
+				"ChangeInPercent": "-0.00016716154193992"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "11",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00240700218818381",
+				"ChangeInPercent": "0.00045641701263114"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "8",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00174329919372412",
+				"ChangeInPercent": "-0.00066370299445969"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "11",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00234741784037559",
+				"ChangeInPercent": "0.00060411864665147"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "7",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.00158371040723982",
+				"ChangeInPercent": "-0.00076370743313577"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "9",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00199733688415446",
+				"ChangeInPercent": "0.00041362647691464"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "11",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00233545647558386",
+				"ChangeInPercent": "0.0003381195914294"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "13",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00275307073274036",
+				"ChangeInPercent": "0.0004176142571565"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "8",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.00168243953732913",
+				"ChangeInPercent": "-0.00107063119541123"
+			},
+			{
+				"Concentration": "Slavic Languages and Literatures",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "8",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00158321789036216",
+				"ChangeInPercent": "-0.00009922164696697"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "290",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0622184080669384",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "282",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.0602178090967329",
+				"ChangeInPercent": "-0.00200059897020551"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "293",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0620499788225328",
+				"ChangeInPercent": "0.0018321697257999"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "298",
+				"ChangeInNumber": "5",
+				"PercentofStudents": "0.0645860424794105",
+				"ChangeInPercent": "0.0025360636568777"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "307",
+				"ChangeInNumber": "9",
+				"PercentofStudents": "0.0671772428884026",
+				"ChangeInPercent": "0.00259120040899211"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "305",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.0664632817607322",
+				"ChangeInPercent": "-0.000713961127670401"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "326",
+				"ChangeInNumber": "21",
+				"PercentofStudents": "0.0695689287238583",
+				"ChangeInPercent": "0.0031056469631261"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "312",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.0705882352941176",
+				"ChangeInPercent": "0.00101930657025931"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "296",
+				"ChangeInNumber": "-16",
+				"PercentofStudents": "0.0656901908566356",
+				"ChangeInPercent": "-0.004898044437482"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "311",
+				"ChangeInNumber": "15",
+				"PercentofStudents": "0.0660297239915074",
+				"ChangeInPercent": "0.000339533134871797"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "297",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.0628970775095299",
+				"ChangeInPercent": "-0.0031326464819775"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "322",
+				"ChangeInNumber": "25",
+				"PercentofStudents": "0.0677181913774974",
+				"ChangeInPercent": "0.00482111386796751"
+			},
+			{
+				"Concentration": "Social Studies",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "305",
+				"ChangeInNumber": "-17",
+				"PercentofStudents": "0.0603601820700574",
+				"ChangeInPercent": "-0.00735800930744"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "82",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0175927912465136",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "83",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0177236814008114",
+				"ChangeInPercent": "0.000130890154297798"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "80",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.0169419737399407",
+				"ChangeInPercent": "-0.000781707660870698"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "75",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0162548764629389",
+				"ChangeInPercent": "-0.000687097277001801"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "78",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0170678336980306",
+				"ChangeInPercent": "0.000812957235091699"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "73",
+				"ChangeInNumber": "-5",
+				"PercentofStudents": "0.0159076051427326",
+				"ChangeInPercent": "-0.001160228555298"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "79",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.0168587281263338",
+				"ChangeInPercent": "0.000951122983601203"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "94",
+				"ChangeInNumber": "15",
+				"PercentofStudents": "0.0212669683257919",
+				"ChangeInPercent": "0.0044082401994581"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "144",
+				"ChangeInNumber": "50",
+				"PercentofStudents": "0.0319573901464714",
+				"ChangeInPercent": "0.0106904218206795"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "155",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0329087048832272",
+				"ChangeInPercent": "0.000951314736755797"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "186",
+				"ChangeInNumber": "31",
+				"PercentofStudents": "0.0393900889453621",
+				"ChangeInPercent": "0.0064813840621349"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "164",
+				"ChangeInNumber": "-22",
+				"PercentofStudents": "0.0344900105152471",
+				"ChangeInPercent": "-0.00490007843011499"
+			},
+			{
+				"Concentration": "Sociology",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "150",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.0296853354442905",
+				"ChangeInPercent": "-0.0048046750709566"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "4",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000858184938854323",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "7",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00149476831091181",
+				"ChangeInPercent": "0.000636583372057487"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "6",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00127064803049555",
+				"ChangeInPercent": "-0.00022412028041626"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "7",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00151712180320763",
+				"ChangeInPercent": "0.00024647377271208"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "5",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00109409190371991",
+				"ChangeInPercent": "-0.00042302989948772"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "3",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.000653737197646546",
+				"ChangeInPercent": "-0.000440354706073364"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "1",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.000213401621852326",
+				"ChangeInPercent": "-0.00044033557579422"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "1",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000226244343891403",
+				"ChangeInPercent": "0.000012842722039077"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "2",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.000443852640923213",
+				"ChangeInPercent": "0.00021760829703181"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "1",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.000212314225053079",
+				"ChangeInPercent": "-0.000231538415870134"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "1",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000211774671749259",
+				"ChangeInPercent": "-0.00000053955330382"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "5",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0010515247108307",
+				"ChangeInPercent": "0.000839750039081441"
+			},
+			{
+				"Concentration": "South Asian Studies",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "7",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00138531565406689",
+				"ChangeInPercent": "0.00033379094323619"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2000",
+				"Number": "4",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.000858184938854323",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2001",
+				"Number": "3",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.000640614990390775",
+				"ChangeInPercent": "-0.000217569948463548"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2002",
+				"Number": "9",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00190597204574333",
+				"ChangeInPercent": "0.00126535705535255"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2003",
+				"Number": "8",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00173385348938015",
+				"ChangeInPercent": "-0.00017211855636318"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2004",
+				"Number": "8",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00175054704595186",
+				"ChangeInPercent": "0.0000166935565717101"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2005",
+				"Number": "4",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.000871649596862061",
+				"ChangeInPercent": "-0.000878897449089799"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2006",
+				"Number": "7",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00149381135296628",
+				"ChangeInPercent": "0.000622161756104219"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2007",
+				"Number": "11",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.00248868778280543",
+				"ChangeInPercent": "0.00099487642983915"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2008",
+				"Number": "17",
+				"ChangeInNumber": "6",
+				"PercentofStudents": "0.00377274744784731",
+				"ChangeInPercent": "0.00128405966504188"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2009",
+				"Number": "28",
+				"ChangeInNumber": "11",
+				"PercentofStudents": "0.0059447983014862",
+				"ChangeInPercent": "0.00217205085363889"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2010",
+				"Number": "48",
+				"ChangeInNumber": "20",
+				"PercentofStudents": "0.0101651842439644",
+				"ChangeInPercent": "0.0042203859424782"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2011",
+				"Number": "60",
+				"ChangeInNumber": "12",
+				"PercentofStudents": "0.0126182965299685",
+				"ChangeInPercent": "0.0024531122860041"
+			},
+			{
+				"Concentration": "Statistics",
+				"Category": "Natural Sciences",
+				"Year": "2012",
+				"Number": "95",
+				"ChangeInNumber": "35",
+				"PercentofStudents": "0.0188007124480507",
+				"ChangeInPercent": "0.0061824159180822"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2000",
+				"Number": "18",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.00386183222484445",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2001",
+				"Number": "10",
+				"ChangeInNumber": "-8",
+				"PercentofStudents": "0.00213538330130258",
+				"ChangeInPercent": "-0.00172644892354187"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2002",
+				"Number": "12",
+				"ChangeInNumber": "2",
+				"PercentofStudents": "0.00254129606099111",
+				"ChangeInPercent": "0.00040591275968853"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2003",
+				"Number": "9",
+				"ChangeInNumber": "-3",
+				"PercentofStudents": "0.00195058517555267",
+				"ChangeInPercent": "-0.00059071088543844"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2004",
+				"Number": "10",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00218818380743982",
+				"ChangeInPercent": "0.00023759863188715"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2005",
+				"Number": "13",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0028328611898017",
+				"ChangeInPercent": "0.00064467738236188"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2006",
+				"Number": "14",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.00298762270593257",
+				"ChangeInPercent": "0.00015476151613087"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2007",
+				"Number": "12",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00271493212669683",
+				"ChangeInPercent": "-0.00027269057923574"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2008",
+				"Number": "10",
+				"ChangeInNumber": "-2",
+				"PercentofStudents": "0.00221926320461607",
+				"ChangeInPercent": "-0.00049566892208076"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2009",
+				"Number": "13",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.00276008492569002",
+				"ChangeInPercent": "0.00054082172107395"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2010",
+				"Number": "17",
+				"ChangeInNumber": "4",
+				"PercentofStudents": "0.0036001694197374",
+				"ChangeInPercent": "0.00084008449404738"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2011",
+				"Number": "16",
+				"ChangeInNumber": "-1",
+				"PercentofStudents": "0.00336487907465825",
+				"ChangeInPercent": "-0.00023529034507915"
+			},
+			{
+				"Concentration": "Studies of Women, Gender, and Sexuality",
+				"Category": "Social Sciences",
+				"Year": "2012",
+				"Number": "40",
+				"ChangeInNumber": "24",
+				"PercentofStudents": "0.00791608945181081",
+				"ChangeInPercent": "0.00455121037715256"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2000",
+				"Number": "58",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0124436816133877",
+				"ChangeInPercent": "0"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2001",
+				"Number": "59",
+				"ChangeInNumber": "1",
+				"PercentofStudents": "0.0125987614776852",
+				"ChangeInPercent": "0.000155079864297501"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2002",
+				"Number": "67",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.0141889030072003",
+				"ChangeInPercent": "0.0015901415295151"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2003",
+				"Number": "82",
+				"ChangeInNumber": "15",
+				"PercentofStudents": "0.0177719982661465",
+				"ChangeInPercent": "0.0035830952589462"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2004",
+				"Number": "90",
+				"ChangeInNumber": "8",
+				"PercentofStudents": "0.0196936542669584",
+				"ChangeInPercent": "0.0019216560008119"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2005",
+				"Number": "90",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0196121159293964",
+				"ChangeInPercent": "-0.0000815383375620017"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2006",
+				"Number": "84",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0179257362355954",
+				"ChangeInPercent": "-0.001686379693801"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2007",
+				"Number": "84",
+				"ChangeInNumber": "0",
+				"PercentofStudents": "0.0190045248868778",
+				"ChangeInPercent": "0.0010787886512824"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2008",
+				"Number": "80",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0177541056369285",
+				"ChangeInPercent": "-0.0012504192499493"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2009",
+				"Number": "83",
+				"ChangeInNumber": "3",
+				"PercentofStudents": "0.0176220806794055",
+				"ChangeInPercent": "-0.000132024957523"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2010",
+				"Number": "69",
+				"ChangeInNumber": "-14",
+				"PercentofStudents": "0.0146124523506989",
+				"ChangeInPercent": "-0.0030096283287066"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2011",
+				"Number": "65",
+				"ChangeInNumber": "-4",
+				"PercentofStudents": "0.0136698212407992",
+				"ChangeInPercent": "-0.0009426311098997"
+			},
+			{
+				"Concentration": "Visual and Environmental Studies",
+				"Category": "Humanities",
+				"Year": "2012",
+				"Number": "59",
+				"ChangeInNumber": "-6",
+				"PercentofStudents": "0.0116762319414209",
+				"ChangeInPercent": "-0.0019935892993783"
+			}
+		]
+
+		var dataset = []
+		year = 2012; 
+
+		for (var i = year - 2000; i < cList.length; i += 13){
+			dataset.push(cList[i]);
+		}
+		dataset = sort(dataset);
+		var filteredData = [];
+
+		function resetData(){
+			dataset = [];
+			filteredData = [];
+			for (var i = year - 2000; i < cList.length; i+=13){
+				dataset.push(cList[i]);	
+			}
+			dataset = sort(dataset);
+		}
+
+		function filterCategory(category){
+			resetData();
+			var categoryList = [];
+			for (var i=0; i< dataset.length; i++){
+				if (dataset[i].Category == category){
+					categoryList.push(dataset[i]);
+				}
+			}
+			dataset = categoryList;
+			update();
+		}
+
+
+
+		//Draw SVG
+		var svg = d3.select("#d3el")
+			.append("svg")
+			.attr("width", w)
+			.attr("height", h);
+
+
+		function update(){
+			spacing = dataset.length * 5;
+
+			//Append Concentration Names to Display on X axis	
+			var c = [];
+			for (var i = 0; i< dataset.length; i++){
+				c.push(dataset[i].Concentration);
+			}
+			
+			//Establish Scales and Axis
+			var yScale = d3.scale.linear()
+				.domain([0, d3.max(dataset, function(d) {return parseInt(d.Number);})])
+				.range([h-bottomPadding - 3, padding]);
+			
+			var yAxis = d3.svg.axis()
+				.scale(yScale)
+				.orient("left")
+				.ticks(10);
+
+			var xScale = d3.scale.linear()
+				.domain([0, dataset.length])
+				.range([spacing, w-spacing]);
+
+			var xOrdinal = d3.scale.ordinal()
+				.domain(c)
+				.rangePoints([padding, w-padding], 1.0);	
+		
+			var xAxis = d3.svg.axis()
+				.scale(xOrdinal)
+				.orient("bottom");	
+			
+			dataset = sort(dataset);
+
+			//Draw Rectangles
+			var rect = svg.selectAll("rect")
+				.data(dataset, function(d) { return d.Concentration;});
+
+			rect.attr("class", function(d) { return "update " + d.Category[0];})
+				.transition()
+				.duration(750)
+				.attr("y", function(d) { return yScale(parseInt(d.Number));})
+				.attr("x", function(d, i) { return xOrdinal(d.Concentration) - 180/dataset.length; })
+				.attr("width", function() { return w/(2*dataset.length); })
+				.attr("height", function(d) { return h - yScale(d.Number) - bottomPadding; });
+			
+
+			rect.enter()
+				.append("rect")
+				.attr("class", function(d) { return "enter " + d.Category[0];})
+				.on('mouseover', function() { d3.selectAll("rect").attr("class", function(d){ return "muted " + d.Category[0];}); d3.select(this).attr("class", "highlight"); return tooltip.style("visibility", "visible");})
+				.on("mousemove", function(d) {tooltip.html("<em>" + d.Concentration + "</em>" + "<br> " + d.Number + " students"); return tooltip.style("top", (event.pageY-200)+"px").style("left",(event.pageX+10)+"px");})
+				.on("mouseout", function() {d3.selectAll("rect").attr("class", function(d) { return "enter " + d.Category[0];}); return tooltip.style("visibility", "hidden");})
+				.attr("x", function(d, i) { return xOrdinal(d.Concentration) - w/5/dataset.length; })
+				.attr("y", function() { return h - bottomPadding;})
+				.attr("width", function() { return w/(2*dataset.length); })
+				.attr("height", 0)
+				.transition()
+				.delay(100)
+				.duration(750)
+				.attr("y", function(d) { return yScale(d.Number);})
+				.attr("height", function(d) { return h - yScale(d.Number) - bottomPadding; })
+				.style("opacity", 1)
+
+
+
+
+			rect.exit()
+				.attr("class", function(d){ return "exit " + d.Category[0];})
+				.attr("y", function(d) { return yScale(d.Number);})
+				.attr("height", function(d) { return h - yScale(d.Number) - bottomPadding; })
+				.style("opacity", 1)
+				.transition()
+				.duration(500)
+				.attr("y", function() { return h - bottomPadding;})
+				.attr("height", 0)
+				.style("opacity", 1)
+				.remove();
+
+			//Draw Average Line
+			function getAverage(){
+				var avg = 0;
+				for (var i = 0; i < dataset.length; i++){
+					avg += parseInt(dataset[i].Number);
+				}	
+				return avg/dataset.length;
+			}
+			
+			average = getAverage();
+
+			svg.select('line').remove();
+			var avgLine =  svg.append('line')
+				.attr("x1", padding)
+				.attr("x2", w-padding)
+				.attr("y1", yScale(average))
+				.attr("y2", yScale(average))
+				.attr("data-toggle", "tooltip")
+				.attr("data-original-title", "first tooltip")
+				.attr("rel", "tooltip")
+				.style("stroke", "#3D4C42")
+				.style("stroke-width", "1");
+			
+			avgLine.append("text")
+				.text("hello");
+
+			//Remove Axis if they exist
+			svg.selectAll("g").remove();
+			
+			//Draw x and y axis
+			svg.append("g")
+				.call(xAxis)
+				.attr("class", "axis")
+				.attr("transform", "translate(0," + (h-bottomPadding) + ")")
+				.selectAll("text")
+				.style("text-anchor", "end")
+				.style("font-size", "0.7em")
+				.style("font-family", "serif")
+				.attr("dx", "-.8em")
+				.attr("dy", ".15em")
+				.attr("transform", function(d){
+					return "rotate(-65)";
+				});
+
+			svg.append("g")
+				.attr("class", "axis")
+				.call(yAxis)
+				.attr("transform", "translate(" + padding + ")");
+			//x Axis Label
+			
+			var label= svg.selectAll(".label")
+				.remove();
+
+			svg.append("text")
+			.attr("class", "y label")
+			.attr("text-anchor", "end")
+			.attr("y", 0)
+			.attr("x", -padding)
+			.attr("dy", "0.75em")
+			.attr("transform", "rotate(-90)")
+			.text("Number of Students");
+
+		}
+
+		update();	
+
+
+
+	function update_year(list, year){
+		var new_list = [];
+		for (var i = year - 2000; i < cList.length; i+=13){
+			for (var j = 0; j < list.length; j++){
+				if (list[j].Concentration == cList[i].Concentration){
+					new_list.push(cList[i]);
+					break;
+				}
+			}
+		}
+		new_list = sort(new_list);	
+		drawTable(function(){return getTop("all");});
+		return new_list;
+	}
+
+		document.getElementById("yrs").onchange = function(){
+			year = document.getElementById("yrs").value;
+			dataset = update_year(dataset, year);
+			filteredData = update_year(filteredData, year);
+			update();
+		}
+
+
+		var sideBar  = d3.select("#scrollable-concentrations")
+			.append("div")
+			.attr("id", "sideBar");
+
+		function getTop(category){
+			var tempList = [];
+			tempList = dataset.slice(0, dataset.length);
+			tempList.sort(function(a,b){
+				if (parseInt(a.Number) > parseInt(b.Number)){
+					return -1;
+				}
+				if (parseInt(a.Number) < parseInt(b.Number)){
+					return 1;	
+				}
+				return 0;
+				});
+			tempList.splice(5, tempList.length);
+			return tempList;
+			};
+
+		function drawTable(data){
+			var sideBar = d3.select("#sideBar");
+
+			sideBar.select("h3").remove();
+			sideBar.append("h3").html("Top Concentrations");
+
+			var table = sideBar.select("table")
+				.remove();
+
+			var table = sideBar.append("table");
+
+			var row = table.selectAll("tr")
+				.data(data)
+				.enter()
+				.append("tr")
+				.html(function(d) { return "<td align='right'><div class='hideextra' style='width:200px'>" + "<em>" + d.Concentration.slice(0, 22) + "</em></div></td><td align='right'>&nbsp;&nbsp;" + d.Number + " students" + "</td>" });
+
+			sideBar.selectAll("p").remove()
+			sideBar.append("p")
+				.attr("class", "faded")
+				.style("text-align", "right")
+				.style("margin-top", "20px")
+				.style("margin-bottom", "0px")
+				.html("<em style='padding-right: 30px'>Average</em>&nbsp;&nbsp;" + Math.round(average) + " students</td>");
+			
+			var total = 0;
+			for (var i = 0; i<dataset.length; i++){
+				total += parseInt(dataset[i].Number);
+			}
+			sideBar.append("p")
+				.attr("class", "faded")
+				.style("text-align", "right")
+				.html("<em style='padding-right: 25px'>Total</em> &nbsp;" + total + " students");
+		}
+
+		var topAll = getTop("all");	
+
+		drawTable(topAll);
+
+	</script>
+
+
+</body>
+</html>
